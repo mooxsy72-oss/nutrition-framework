@@ -270,30 +270,6 @@ export function buildUI() {
         `<option value="${t.id}" ${t.id === currentTheme ? 'selected' : ''}>${t.label}</option>`
     ).join('');
 
-    // ── Плавающая кнопка (перетаскиваемая) ──
-    const floatBtn = document.createElement('button');
-    floatBtn.id = 'nut-float-btn';
-    floatBtn.title = 'Nutrition Framework';
-    floatBtn.innerHTML = `
-        <img class="nut-float-icon" src="${ICON_URL}" alt="🍎" onerror="this.parentElement.textContent='🍎'">
-        <span class="nut-float-pulse"></span>
-    `;
-    if (!isFloatBtnVisible()) floatBtn.classList.add('nut-hidden');
-
-    // Восстанавливаем позицию ТОЛЬКО на десктопе
-    // На мобильных — пусть CSS bottom/right работает без помех
-    if (window.innerWidth >= 768) {
-        restoreFloatPos(floatBtn);
-    } else {
-        localStorage.removeItem(LS_FLOAT_POS_KEY);
-    }
-
-    // Перетаскивание + клик
-    makeDraggable(floatBtn, floatBtn, {
-        onDragEnd: () => saveFloatPos(floatBtn),
-        onClick: () => togglePanel(),
-    });
-
     // ── Главная панель ──
     const root = document.createElement('div');
     root.id = 'nut-root';
@@ -327,10 +303,82 @@ export function buildUI() {
             <div class="nut-content" id="nut-content"></div>
         </div>
     `;
-    root.appendChild(floatBtn);
     document.body.appendChild(root);
 
-    // ── Обработчики ──
+    // ── Плавающая кнопка — ОТДЕЛЬНО в body (как в Fetish Manager) ──
+    const floatBtn = document.createElement('div');
+    floatBtn.id = 'nut-float-btn';
+    floatBtn.title = 'Nutrition Framework';
+    floatBtn.innerHTML = `
+        <img class="nut-float-icon" src="${ICON_URL}" alt="🍎" onerror="this.textContent='🍎'">
+    `;
+    if (!isFloatBtnVisible()) floatBtn.classList.add('nut-hidden');
+    document.body.appendChild(floatBtn);
+
+    // ── Клик по кнопке ──
+    let floatClickAllowed = true;
+    floatBtn.addEventListener('click', (e) => {
+        if (!floatClickAllowed) return;
+        e.preventDefault();
+        e.stopPropagation();
+        togglePanel();
+    });
+
+    // ── Перетаскивание кнопки (только десктоп) ──
+    if (window.innerWidth >= 768) {
+        let isDragging = false;
+        let moved = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+
+        floatBtn.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            moved = false;
+            floatClickAllowed = true;
+            const rect = floatBtn.getBoundingClientRect();
+            origX = rect.left;
+            origY = rect.top;
+            startX = e.clientX;
+            startY = e.clientY;
+            floatBtn.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        });
+
+        floatBtn.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            if (!moved && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            moved = true;
+            floatClickAllowed = false;
+
+            let nx = origX + dx;
+            let ny = origY + dy;
+            const maxX = window.innerWidth - floatBtn.offsetWidth;
+            const maxY = window.innerHeight - floatBtn.offsetHeight;
+            nx = Math.max(0, Math.min(maxX, nx));
+            ny = Math.max(0, Math.min(maxY, ny));
+
+            floatBtn.style.top = ny + 'px';
+            floatBtn.style.left = nx + 'px';
+            floatBtn.style.right = 'auto';
+            floatBtn.style.bottom = 'auto';
+        });
+
+        floatBtn.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            floatBtn.releasePointerCapture(e.pointerId);
+            if (moved) {
+                saveFloatPos(floatBtn);
+                setTimeout(() => { floatClickAllowed = true; }, 50);
+            }
+        });
+
+        // Восстанавливаем позицию только на десктопе
+        restoreFloatPos(floatBtn);
+    }
+
+    // ── Обработчики панели ──
     document.getElementById('nut-close').addEventListener('click', () => togglePanel(false));
 
     document.getElementById('nut-power').addEventListener('click', () => {
