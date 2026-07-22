@@ -303,10 +303,16 @@ export function buildUI() {
     // Вставляем в body
     document.body.appendChild(floatBtn);
 
-    // ПРИНУДИТЕЛЬНО задаём позицию inline — CSS файл может не загружаться или кэшироваться
+    // На мобильном — сбрасываем сохранённую позицию и НЕ даём перетаскивать
     if (window.innerWidth < 768) {
         localStorage.removeItem(LS_FLOAT_POS_KEY);
-        floatBtn.style.cssText = 'position:fixed !important; bottom:120px !important; right:15px !important; top:auto !important; left:auto !important; inset:auto !important; z-index:2147483647 !important; width:44px !important; height:44px !important; display:flex !important; align-items:center; justify-content:center; border-radius:50%; background:rgba(26,26,46,0.9); border:2px solid rgba(255,255,255,0.3); color:#e0e0e0; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.5); touch-action:manipulation; opacity:1 !important; visibility:visible !important; pointer-events:auto !important;';
+        // Убираем любые inline стили позиции — пусть работает только CSS
+        floatBtn.style.position = '';
+        floatBtn.style.top = '';
+        floatBtn.style.left = '';
+        floatBtn.style.right = '';
+        floatBtn.style.bottom = '';
+        floatBtn.style.inset = '';
     }
 
     // Клик по кнопке — открыть/закрыть панель
@@ -414,54 +420,40 @@ export function buildUI() {
 
     updatePowerIndicator();
 
-        // ══════════════════════════════════════════════════════════
-    // ДИАГНОСТИКА — УДАЛИТЬ ПОСЛЕ РЕШЕНИЯ ПРОБЛЕМЫ
-    // ══════════════════════════════════════════════════════════
+     // ЯДЕРНЫЙ ТЕСТ — создаём кнопку заново через 3 секунды с нуля
     setTimeout(() => {
-        const btn = document.getElementById('nut-float-btn');
-        const diag = document.createElement('div');
-        diag.id = 'nut-diag';
-        diag.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:red;color:white;font-size:11px;padding:8px;font-family:monospace;white-space:pre-wrap;max-height:40vh;overflow:auto;';
+        // Удаляем всё старое
+        document.getElementById('nut-float-btn')?.remove();
+        document.getElementById('nut-test-btn')?.remove();
 
-        if (!btn) {
-            diag.textContent = 'КНОПКА НЕ НАЙДЕНА В DOM';
-        } else {
-            const cs = window.getComputedStyle(btn);
-            const rect = btn.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            let atPoint = '(off screen)';
-            if (centerX > 0 && centerY > 0 && centerX < window.innerWidth && centerY < window.innerHeight) {
-                const el = document.elementFromPoint(centerX, centerY);
-                atPoint = el ? `${el.tagName}#${el.id}.${el.className.split(' ')[0]}` : 'null';
-            }
+        // Создаём максимально простой div
+        const test = document.createElement('div');
+        test.id = 'nut-test-btn';
+        test.textContent = '🍎';
+        test.setAttribute('style', 'position:fixed; bottom:120px; right:15px; top:auto; left:auto; inset:auto; z-index:2147483647; width:50px; height:50px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:red; color:white; font-size:24px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); pointer-events:auto; opacity:1; visibility:visible;');
 
-            diag.textContent = [
-                `EXISTS: yes`,
-                `RECT: ${Math.round(rect.top)},${Math.round(rect.left)} ${Math.round(rect.width)}x${Math.round(rect.height)}`,
-                `DISPLAY: ${cs.display}`,
-                `VISIBILITY: ${cs.visibility}`,
-                `OPACITY: ${cs.opacity}`,
-                `POSITION: ${cs.position}`,
-                `Z-INDEX: ${cs.zIndex}`,
-                `TOP: ${cs.top}`,
-                `LEFT: ${cs.left}`,
-                `RIGHT: ${cs.right}`,
-                `BOTTOM: ${cs.bottom}`,
-                `INLINE: ${btn.getAttribute('style') || '(none)'}`,
-                `CLASSES: ${btn.className || '(none)'}`,
-                `PARENT: ${btn.parentElement?.tagName}#${btn.parentElement?.id}`,
-                `VIEWPORT: ${window.innerWidth}x${window.innerHeight}`,
-                `AT POINT: ${atPoint}`,
-                `CHILDREN: ${btn.innerHTML.substring(0, 80)}`,
-            ].join('\n');
-        }
+        document.body.appendChild(test);
 
-        document.body.appendChild(diag);
+        test.addEventListener('click', () => {
+            alert('КНОПКА РАБОТАЕТ');
+        });
 
-        // Закрыть по тапу
-        diag.addEventListener('click', () => diag.remove());
-    }, 2000);
+        // Диагностика через 500мс
+        setTimeout(() => {
+            const cs = window.getComputedStyle(test);
+            const rect = test.getBoundingClientRect();
+            console.log('TEST BTN:', {
+                rect: { top: rect.top, left: rect.left, w: rect.width, h: rect.height },
+                bottom: cs.bottom,
+                right: cs.right,
+                top: cs.top,
+                left: cs.left,
+                position: cs.position,
+                display: cs.display,
+                inlineStyle: test.getAttribute('style')?.substring(0, 100),
+            });
+        }, 500);
+    }, 3000);
 }
 
 // ═══════════════════════════════════════════════════════════════
