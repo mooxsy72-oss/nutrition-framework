@@ -303,16 +303,10 @@ export function buildUI() {
     // Вставляем в body
     document.body.appendChild(floatBtn);
 
-    // На мобильном — сбрасываем сохранённую позицию и НЕ даём перетаскивать
+    // ПРИНУДИТЕЛЬНО задаём позицию inline — CSS файл может не загружаться или кэшироваться
     if (window.innerWidth < 768) {
         localStorage.removeItem(LS_FLOAT_POS_KEY);
-        // Убираем любые inline стили позиции — пусть работает только CSS
-        floatBtn.style.position = '';
-        floatBtn.style.top = '';
-        floatBtn.style.left = '';
-        floatBtn.style.right = '';
-        floatBtn.style.bottom = '';
-        floatBtn.style.inset = '';
+        floatBtn.style.cssText = 'position:fixed !important; bottom:120px !important; right:15px !important; top:auto !important; left:auto !important; inset:auto !important; z-index:2147483647 !important; width:44px !important; height:44px !important; display:flex !important; align-items:center; justify-content:center; border-radius:50%; background:rgba(26,26,46,0.9); border:2px solid rgba(255,255,255,0.3); color:#e0e0e0; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.5); touch-action:manipulation; opacity:1 !important; visibility:visible !important; pointer-events:auto !important;';
     }
 
     // Клик по кнопке — открыть/закрыть панель
