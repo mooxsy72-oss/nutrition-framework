@@ -115,24 +115,28 @@
 
 #nut-float-btn {
     position: fixed;
-    z-index: 99999;
+    z-index: 2147483647;
     bottom: 120px;
     right: 15px;
     width: 44px;
     height: 44px;
-    background: transparent;
+    background: rgba(26, 26, 46, 0.85);
     border: 2px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.3));
     border-radius: 50%;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    color: #e0e0e0;
 }
 
 #nut-float-btn:hover {
@@ -146,36 +150,43 @@
 }
 
 #nut-float-btn .nut-float-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+    width: 22px;
+    height: 22px;
     pointer-events: none;
+    flex-shrink: 0;
 }
 
 #nut-float-btn.nut-hidden {
     display: none !important;
+    visibility: hidden !important;
 }
 
 @media (max-width: 768px) {
     #nut-float-btn {
+        bottom: 120px !important;
+        right: 15px !important;
+        top: auto !important;
+        left: auto !important;
+        inset: auto !important;
         width: 44px;
         height: 44px;
-        bottom: 120px;
-        right: 15px;
     }
 }
 
 @media (max-width: 480px) {
     #nut-float-btn {
+        bottom: 110px !important;
+        right: 12px !important;
+        top: auto !important;
+        left: auto !important;
+        inset: auto !important;
         width: 42px;
         height: 42px;
-        bottom: 110px;
-        right: 12px;
     }
 
     #nut-float-btn .nut-float-icon {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
     }
 }
 
