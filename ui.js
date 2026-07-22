@@ -199,6 +199,8 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
 // ═══════════════════════════════════════════════════════════════
 
 function saveFloatPos(el) {
+    // На мобильных не сохраняем позицию — пусть всегда будет дефолтная CSS-позиция
+    if (window.innerWidth < 768) return;
     const rect = el.getBoundingClientRect();
     localStorage.setItem(LS_FLOAT_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
 }
@@ -208,17 +210,34 @@ function restoreFloatPos(el) {
     if (!saved) return;
     try {
         const { left, top } = JSON.parse(saved);
-        // Безопасные границы с учётом текущего размера кнопки
         const btnSize = el.offsetWidth || 52;
-        const nx = Math.max(0, Math.min(window.innerWidth - btnSize, left));
-        const ny = Math.max(0, Math.min(window.innerHeight - btnSize, top));
+        const maxX = window.innerWidth - btnSize;
+        const maxY = window.innerHeight - btnSize;
+
+        // Если сохранённая позиция за пределами экрана — НЕ восстанавливаем
+        // Кнопка останется на дефолтной CSS-позиции (bottom/right)
+        if (left < 0 || top < 0 || left > maxX || top > maxY) {
+            // Удаляем битую позицию из хранилища
+            localStorage.removeItem(LS_FLOAT_POS_KEY);
+            return;
+        }
+
+        // На мобильных (ширина < 768px) не восстанавливаем позицию с десктопа
+        // потому что координаты десктопа гарантированно будут за экраном
+        if (window.innerWidth < 768) {
+            localStorage.removeItem(LS_FLOAT_POS_KEY);
+            return;
+        }
+
+        const nx = Math.max(0, Math.min(maxX, left));
+        const ny = Math.max(0, Math.min(maxY, top));
         el.style.position = 'fixed';
         el.style.left = nx + 'px';
         el.style.top = ny + 'px';
         el.style.right = 'auto';
         el.style.bottom = 'auto';
     } catch {
-        // Если данные битые — не трогаем, кнопка останется на дефолтной позиции
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
     }
 }
 
@@ -272,8 +291,14 @@ export function buildUI() {
     `;
     if (!isFloatBtnVisible()) floatBtn.classList.add('nut-hidden');
 
-    // Восстанавливаем позицию
-    restoreFloatPos(floatBtn);
+    // На мобильных — очищаем сохранённую позицию чтобы кнопка была на дефолтном месте
+    if (window.innerWidth < 768) {
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
+    } else {
+        // Восстанавливаем позицию только на десктопе
+        restoreFloatPos(floatBtn);
+    }
+
 
     // Перетаскивание + клик
     makeDraggable(floatBtn, floatBtn, {
