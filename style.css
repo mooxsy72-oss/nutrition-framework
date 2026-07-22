@@ -114,20 +114,20 @@
    ═══════════════════════════════════════════════════════════════ */
 
 #nut-float-btn {
-    position: fixed;
+    position: fixed !important;
     bottom: 80px;
     right: 20px;
     width: 52px;
     height: 52px;
     border-radius: 50%;
     border: 2px solid color-mix(in srgb, var(--nut-accent, #e94560) 50%, transparent);
-    background: transparent;
+    background: rgba(26, 26, 46, 0.85);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 0 12px color-mix(in srgb, var(--nut-accent, #e94560) 25%, transparent);
     cursor: pointer;
-    z-index: 10000;
-    display: flex;
+    z-index: 99999 !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     touch-action: none;
@@ -135,6 +135,9 @@
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
     transition: box-shadow 0.3s ease, transform 0.15s ease, border-color 0.3s ease;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 #nut-float-btn:hover {
@@ -165,14 +168,13 @@
     animation: nut-float-pulse 3s ease-in-out infinite;
 }
 
-
 @keyframes nut-float-pulse {
     0%   { opacity: 0; transform: scale(0.85); }
     50%  { opacity: 0.6; transform: scale(1.2); }
     100% { opacity: 0; transform: scale(0.85); }
 }
 
-/* Скрытие */
+/* Скрытие — только когда пользователь сам выключил */
 #nut-float-btn.nut-hidden {
     display: none !important;
 }
@@ -183,10 +185,24 @@
 
 @media (max-width: 768px) {
     #nut-float-btn {
-        width: 48px;
-        height: 48px;
+        width: 50px;
+        height: 50px;
         bottom: 90px;
         right: 14px;
+    }
+
+    #nut-float-btn .nut-float-icon {
+        width: 26px;
+        height: 26px;
+    }
+}
+
+@media (max-width: 480px) {
+    #nut-float-btn {
+        width: 48px;
+        height: 48px;
+        bottom: 100px;
+        right: 12px;
     }
 
     #nut-float-btn .nut-float-icon {
@@ -195,19 +211,6 @@
     }
 }
 
-@media (max-width: 480px) {
-    #nut-float-btn {
-        width: 44px;
-        height: 44px;
-        bottom: 80px;
-        right: 10px;
-    }
-
-    #nut-float-btn .nut-float-icon {
-        width: 22px;
-        height: 22px;
-    }
-}
 
 
 /* ═══════════════════════════════════════════════════════════════
