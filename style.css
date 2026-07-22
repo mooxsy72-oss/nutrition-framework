@@ -114,20 +114,20 @@
    ═══════════════════════════════════════════════════════════════ */
 
 #nut-float-btn {
-    position: fixed !important;
+    position: fixed;
     bottom: 80px;
     right: 20px;
     width: 52px;
     height: 52px;
     border-radius: 50%;
     border: 2px solid color-mix(in srgb, var(--nut-accent, #e94560) 50%, transparent);
-    background: rgba(26, 26, 46, 0.85);
+    background: rgba(26, 26, 46, 0.9);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 0 12px color-mix(in srgb, var(--nut-accent, #e94560) 25%, transparent);
     cursor: pointer;
-    z-index: 99999 !important;
-    display: flex !important;
+    z-index: 99999;
+    display: flex;
     align-items: center;
     justify-content: center;
     touch-action: none;
@@ -135,9 +135,6 @@
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
     transition: box-shadow 0.3s ease, transform 0.15s ease, border-color 0.3s ease;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
 }
 
 #nut-float-btn:hover {
@@ -174,7 +171,7 @@
     100% { opacity: 0; transform: scale(0.85); }
 }
 
-/* Скрытие — только когда пользователь сам выключил */
+/* Скрытие */
 #nut-float-btn.nut-hidden {
     display: none !important;
 }
@@ -187,7 +184,7 @@
     #nut-float-btn {
         width: 50px;
         height: 50px;
-        bottom: 90px;
+        bottom: 100px;
         right: 14px;
     }
 
@@ -210,7 +207,6 @@
         height: 24px;
     }
 }
-
 
 
 /* ═══════════════════════════════════════════════════════════════
