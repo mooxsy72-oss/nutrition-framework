@@ -112,19 +112,16 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
     let moved = false;
     let pointerId = null;
 
-    // Определяем мобильное устройство — увеличиваем порог
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const dragThreshold = isMobile ? 15 : threshold;
 
     handle.style.touchAction = 'none';
 
     function onDown(e) {
-        // Не перехватываем клики по интерактивным элементам ВНУТРИ хэндла
         if (handle !== el && e.target.closest('button, select, input, a, .nut-close-btn, .nut-power-btn, .nut-theme-select')) {
             return;
         }
 
-        // Предотвращаем дефолтное поведение на мобильных (предотвращает scroll и ghost click)
         if (handle === el) {
             e.preventDefault();
         }
@@ -150,14 +147,12 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        // Порог — не считаем движение пока не сдвинулись достаточно
         if (!moved && Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
         moved = true;
 
         let nx = origX + dx;
         let ny = origY + dy;
 
-        // Ограничиваем в пределах экрана
         const maxX = window.innerWidth - el.offsetWidth;
         const maxY = window.innerHeight - el.offsetHeight;
         nx = Math.max(0, Math.min(maxX, nx));
@@ -183,7 +178,6 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
         if (moved) {
             if (onDragEnd) onDragEnd();
         } else {
-            // Не двигали — считаем как клик
             if (onClick) onClick();
         }
     }
@@ -194,48 +188,43 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
     handle.addEventListener('pointercancel', onUp);
 }
 
+
 // ═══════════════════════════════════════════════════════════════
 // СОХРАНЕНИЕ / ВОССТАНОВЛЕНИЕ ПОЗИЦИИ
 // ═══════════════════════════════════════════════════════════════
 
 function saveFloatPos(el) {
-    // На мобильных не сохраняем позицию — пусть всегда будет дефолтная CSS-позиция
     if (window.innerWidth < 768) return;
     const rect = el.getBoundingClientRect();
     localStorage.setItem(LS_FLOAT_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
 }
 
 function restoreFloatPos(el) {
+    if (window.innerWidth < 768) {
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
+        return;
+    }
+
     const saved = localStorage.getItem(LS_FLOAT_POS_KEY);
     if (!saved) return;
+
     try {
         const { left, top } = JSON.parse(saved);
         const btnSize = el.offsetWidth || 52;
         const maxX = window.innerWidth - btnSize;
         const maxY = window.innerHeight - btnSize;
 
-        // Если сохранённая позиция за пределами экрана — НЕ восстанавливаем
-        // Кнопка останется на дефолтной CSS-позиции (bottom/right)
         if (left < 0 || top < 0 || left > maxX || top > maxY) {
-            // Удаляем битую позицию из хранилища
             localStorage.removeItem(LS_FLOAT_POS_KEY);
             return;
         }
 
-        // На мобильных (ширина < 768px) не восстанавливаем позицию с десктопа
-        // потому что координаты десктопа гарантированно будут за экраном
-        if (window.innerWidth < 768) {
-            localStorage.removeItem(LS_FLOAT_POS_KEY);
-            return;
-        }
-
-        const nx = Math.max(0, Math.min(maxX, left));
-        const ny = Math.max(0, Math.min(maxY, top));
         el.style.position = 'fixed';
-        el.style.left = nx + 'px';
-        el.style.top = ny + 'px';
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
         el.style.right = 'auto';
         el.style.bottom = 'auto';
+        el.style.transform = 'none';
     } catch {
         localStorage.removeItem(LS_FLOAT_POS_KEY);
     }
@@ -291,14 +280,13 @@ export function buildUI() {
     `;
     if (!isFloatBtnVisible()) floatBtn.classList.add('nut-hidden');
 
-    // На мобильных — очищаем сохранённую позицию чтобы кнопка была на дефолтном месте
-    if (window.innerWidth < 768) {
-        localStorage.removeItem(LS_FLOAT_POS_KEY);
-    } else {
-        // Восстанавливаем позицию только на десктопе
+    // Восстанавливаем позицию ТОЛЬКО на десктопе
+    // На мобильных — пусть CSS bottom/right работает без помех
+    if (window.innerWidth >= 768) {
         restoreFloatPos(floatBtn);
+    } else {
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
     }
-
 
     // Перетаскивание + клик
     makeDraggable(floatBtn, floatBtn, {
@@ -374,6 +362,7 @@ export function buildUI() {
 
     updatePowerIndicator();
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // ПАНЕЛЬ — ОТКРЫТЬ / ЗАКРЫТЬ (НОВАЯ ВЕРСИЯ)
