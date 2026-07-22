@@ -18,9 +18,8 @@ import {
 // КОНСТАНТЫ UI
 // ═══════════════════════════════════════════════════════════════
 
-const ICON_URL = new URL('./icons/nutrition.png', import.meta.url).href;
 let panelOpen = false;
-let activeTab = 'dashboard'; // dashboard | characters | food | settings | debug
+let activeTab = 'dashboard';
 
 // ═══════════════════════════════════════════════════════════════
 // УВЕДОМЛЕНИЯ
@@ -67,7 +66,7 @@ export function showNotify(text, type = 'info', duration = 4000) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ТЕМЫ И НАСТРОЙКИ ОТОБРАЖЕНИЯ
+// ТЕМЫ
 // ═══════════════════════════════════════════════════════════════
 
 const THEMES = [
@@ -103,27 +102,20 @@ function setFloatBtnVisible(visible) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ПЕРЕТАСКИВАНИЕ (универсальная функция)
+// ПЕРЕТАСКИВАНИЕ ПАНЕЛИ
 // ═══════════════════════════════════════════════════════════════
 
-function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold = 8 } = {}) {
+function makeDraggable(el, handle, { onDragStart, onDragEnd } = {}) {
     let startX = 0, startY = 0, origX = 0, origY = 0;
     let dragging = false;
     let moved = false;
     let pointerId = null;
 
-    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const dragThreshold = isMobile ? 15 : threshold;
-
     handle.style.touchAction = 'none';
 
     function onDown(e) {
-        if (handle !== el && e.target.closest('button, select, input, a, .nut-close-btn, .nut-power-btn, .nut-theme-select')) {
+        if (e.target.closest('button, select, input, a, .nut-close-btn, .nut-power-btn, .nut-theme-select')) {
             return;
-        }
-
-        if (handle === el) {
-            e.preventDefault();
         }
 
         dragging = true;
@@ -137,7 +129,6 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
         startY = e.clientY;
 
         try { handle.setPointerCapture(e.pointerId); } catch {}
-
         if (onDragStart) onDragStart();
     }
 
@@ -147,7 +138,7 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        if (!moved && Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
+        if (!moved && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         moved = true;
 
         let nx = origX + dx;
@@ -172,14 +163,9 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
         dragging = false;
 
         try { handle.releasePointerCapture(e.pointerId); } catch {}
-
         el.style.transition = '';
 
-        if (moved) {
-            if (onDragEnd) onDragEnd();
-        } else {
-            if (onClick) onClick();
-        }
+        if (moved && onDragEnd) onDragEnd();
     }
 
     handle.addEventListener('pointerdown', onDown, { passive: false });
@@ -188,56 +174,18 @@ function makeDraggable(el, handle, { onDragStart, onDragEnd, onClick, threshold 
     handle.addEventListener('pointercancel', onUp);
 }
 
-
 // ═══════════════════════════════════════════════════════════════
-// СОХРАНЕНИЕ / ВОССТАНОВЛЕНИЕ ПОЗИЦИИ
+// СОХРАНЕНИЕ ПОЗИЦИИ ПАНЕЛИ
 // ═══════════════════════════════════════════════════════════════
-
-function saveFloatPos(el) {
-    if (window.innerWidth < 768) return;
-    const rect = el.getBoundingClientRect();
-    localStorage.setItem(LS_FLOAT_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
-}
-
-function restoreFloatPos(el) {
-    if (window.innerWidth < 768) {
-        localStorage.removeItem(LS_FLOAT_POS_KEY);
-        return;
-    }
-
-    const saved = localStorage.getItem(LS_FLOAT_POS_KEY);
-    if (!saved) return;
-
-    try {
-        const { left, top } = JSON.parse(saved);
-        const btnSize = el.offsetWidth || 52;
-        const maxX = window.innerWidth - btnSize;
-        const maxY = window.innerHeight - btnSize;
-
-        if (left < 0 || top < 0 || left > maxX || top > maxY) {
-            localStorage.removeItem(LS_FLOAT_POS_KEY);
-            return;
-        }
-
-        el.style.position = 'fixed';
-        el.style.left = left + 'px';
-        el.style.top = top + 'px';
-        el.style.right = 'auto';
-        el.style.bottom = 'auto';
-        el.style.transform = 'none';
-    } catch {
-        localStorage.removeItem(LS_FLOAT_POS_KEY);
-    }
-}
-
 
 function savePanelPos(el) {
+    if (window.innerWidth <= 560) return;
     const rect = el.getBoundingClientRect();
     localStorage.setItem(LS_PANEL_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
 }
 
 function restorePanelPos(el) {
-    if (window.innerWidth <= 560) return; // на мобильных — fullscreen, не восстанавливаем
+    if (window.innerWidth <= 560) return;
     const saved = localStorage.getItem(LS_PANEL_POS_KEY);
     if (!saved) return;
     try {
@@ -257,12 +205,41 @@ function restorePanelPos(el) {
     } catch {}
 }
 
+function saveFloatPos(el) {
+    if (window.innerWidth < 768) return;
+    const rect = el.getBoundingClientRect();
+    localStorage.setItem(LS_FLOAT_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
+}
+
+function restoreFloatPos(el) {
+    if (window.innerWidth < 768) return;
+    const saved = localStorage.getItem(LS_FLOAT_POS_KEY);
+    if (!saved) return;
+    try {
+        const { left, top } = JSON.parse(saved);
+        const btnSize = el.offsetWidth || 44;
+        const maxX = window.innerWidth - btnSize;
+        const maxY = window.innerHeight - btnSize;
+        if (left < 0 || top < 0 || left > maxX || top > maxY) {
+            localStorage.removeItem(LS_FLOAT_POS_KEY);
+            return;
+        }
+        el.style.position = 'fixed';
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+    } catch {
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════
-// ПОСТРОЕНИЕ UI (НОВАЯ ВЕРСИЯ)
+// ПОСТРОЕНИЕ UI
 // ═══════════════════════════════════════════════════════════════
 
 export function buildUI() {
+    // Защита от двойного вызова
     if (document.getElementById('nut-root')) return;
 
     const currentTheme = getTheme();
@@ -305,80 +282,113 @@ export function buildUI() {
     `;
     document.body.appendChild(root);
 
-    // ── Плавающая кнопка — ОТДЕЛЬНО в body (как в Fetish Manager) ──
+    // ══════════════════════════════════════════════════════════
+    // ПЛАВАЮЩАЯ КНОПКА
+    // ══════════════════════════════════════════════════════════
+
+    // Удаляем старую если осталась (hot reload)
+    document.getElementById('nut-float-btn')?.remove();
+
+    // Создаём кнопку
     const floatBtn = document.createElement('div');
     floatBtn.id = 'nut-float-btn';
     floatBtn.title = 'Nutrition Framework';
-    floatBtn.innerHTML = `
-        <img class="nut-float-icon" src="${ICON_URL}" alt="🍎" onerror="this.textContent='🍎'">
-    `;
-    if (!isFloatBtnVisible()) floatBtn.classList.add('nut-hidden');
+    floatBtn.innerHTML = `<svg class="nut-float-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5" fill="currentColor" stroke="none"/></svg>`;
+
+    // Скрываем если пользователь отключил
+    if (!isFloatBtnVisible()) {
+        floatBtn.classList.add('nut-hidden');
+    }
+
+    // Вставляем в body
     document.body.appendChild(floatBtn);
 
-    // ── Клик по кнопке ──
-    let floatClickAllowed = true;
-    floatBtn.addEventListener('click', (e) => {
-        if (!floatClickAllowed) return;
+    // На мобильном — сбрасываем сохранённую позицию и НЕ даём перетаскивать
+    if (window.innerWidth < 768) {
+        localStorage.removeItem(LS_FLOAT_POS_KEY);
+        // Убираем любые inline стили позиции — пусть работает только CSS
+        floatBtn.style.position = '';
+        floatBtn.style.top = '';
+        floatBtn.style.left = '';
+        floatBtn.style.right = '';
+        floatBtn.style.bottom = '';
+        floatBtn.style.inset = '';
+    }
+
+    // Клик по кнопке — открыть/закрыть панель
+    floatBtn.addEventListener('click', function (e) {
+        // Если кнопку только что перетащили — не открываем панель
+        if (this.dataset.wasDragged === 'true') {
+            this.dataset.wasDragged = 'false';
+            return;
+        }
         e.preventDefault();
         e.stopPropagation();
         togglePanel();
     });
 
-    // ── Перетаскивание кнопки (только десктоп) ──
+    // Перетаскивание — ТОЛЬКО на десктопе (ширина >= 768)
     if (window.innerWidth >= 768) {
         let isDragging = false;
-        let moved = false;
+        let hasMoved = false;
         let startX = 0, startY = 0, origX = 0, origY = 0;
 
-        floatBtn.addEventListener('pointerdown', (e) => {
+        floatBtn.addEventListener('pointerdown', function (e) {
             isDragging = true;
-            moved = false;
-            floatClickAllowed = true;
-            const rect = floatBtn.getBoundingClientRect();
+            hasMoved = false;
+            this.dataset.wasDragged = 'false';
+            const rect = this.getBoundingClientRect();
             origX = rect.left;
             origY = rect.top;
             startX = e.clientX;
             startY = e.clientY;
-            floatBtn.setPointerCapture(e.pointerId);
+            try { this.setPointerCapture(e.pointerId); } catch {}
             e.preventDefault();
         });
 
-        floatBtn.addEventListener('pointermove', (e) => {
+        floatBtn.addEventListener('pointermove', function (e) {
             if (!isDragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            if (!moved && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-            moved = true;
-            floatClickAllowed = false;
+            if (!hasMoved && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            hasMoved = true;
+            this.dataset.wasDragged = 'true';
 
             let nx = origX + dx;
             let ny = origY + dy;
-            const maxX = window.innerWidth - floatBtn.offsetWidth;
-            const maxY = window.innerHeight - floatBtn.offsetHeight;
+            const maxX = window.innerWidth - this.offsetWidth;
+            const maxY = window.innerHeight - this.offsetHeight;
             nx = Math.max(0, Math.min(maxX, nx));
             ny = Math.max(0, Math.min(maxY, ny));
 
-            floatBtn.style.top = ny + 'px';
-            floatBtn.style.left = nx + 'px';
-            floatBtn.style.right = 'auto';
-            floatBtn.style.bottom = 'auto';
+            this.style.position = 'fixed';
+            this.style.top = ny + 'px';
+            this.style.left = nx + 'px';
+            this.style.right = 'auto';
+            this.style.bottom = 'auto';
         });
 
-        floatBtn.addEventListener('pointerup', (e) => {
+        floatBtn.addEventListener('pointerup', function (e) {
             if (!isDragging) return;
             isDragging = false;
-            floatBtn.releasePointerCapture(e.pointerId);
-            if (moved) {
-                saveFloatPos(floatBtn);
-                setTimeout(() => { floatClickAllowed = true; }, 50);
+            try { this.releasePointerCapture(e.pointerId); } catch {}
+            if (hasMoved) {
+                saveFloatPos(this);
             }
         });
 
-        // Восстанавливаем позицию только на десктопе
+        floatBtn.addEventListener('pointercancel', function () {
+            isDragging = false;
+        });
+
+        // Восстанавливаем сохранённую позицию (только десктоп)
         restoreFloatPos(floatBtn);
     }
 
-    // ── Обработчики панели ──
+    // ══════════════════════════════════════════════════════════
+    // ОБРАБОТЧИКИ ПАНЕЛИ
+    // ══════════════════════════════════════════════════════════
+
     document.getElementById('nut-close').addEventListener('click', () => togglePanel(false));
 
     document.getElementById('nut-power').addEventListener('click', () => {
@@ -400,7 +410,7 @@ export function buildUI() {
         });
     });
 
-    // ── Перетаскивание панели за хедер ──
+    // Перетаскивание панели за хедер
     const panel = document.getElementById('nut-panel');
     const header = document.getElementById('nut-panel-header');
     makeDraggable(panel, header, {
@@ -411,9 +421,8 @@ export function buildUI() {
     updatePowerIndicator();
 }
 
-
 // ═══════════════════════════════════════════════════════════════
-// ПАНЕЛЬ — ОТКРЫТЬ / ЗАКРЫТЬ (НОВАЯ ВЕРСИЯ)
+// ПАНЕЛЬ — ОТКРЫТЬ / ЗАКРЫТЬ
 // ═══════════════════════════════════════════════════════════════
 
 export function togglePanel(forceState) {
@@ -422,23 +431,19 @@ export function togglePanel(forceState) {
     if (!panel) return;
 
     if (panelOpen) {
-        // СНАЧАЛА восстанавливаем позицию (до показа), чтобы не было скачка
         restorePanelPos(panel);
-        // Убираем анимацию появления если панель уже была перемещена
         if (panel.classList.contains('nut-dragged')) {
             panel.style.animation = 'none';
         }
         panel.classList.remove('nut-hidden');
         renderContent();
     } else {
-        // Сохраняем позицию перед закрытием
         if (panel.classList.contains('nut-dragged')) {
             savePanelPos(panel);
         }
         panel.classList.add('nut-hidden');
     }
 }
-
 
 function updatePowerIndicator() {
     const dot = document.getElementById('nut-power-dot');
@@ -563,7 +568,6 @@ function renderDashboardTab(container) {
         </div>
     `;
 
-    // Быстрые действия
     document.getElementById('nut-quick-water')?.addEventListener('click', () => {
         window.NutritionFramework.manualAddWater(250);
         renderDashboardTab(container);
@@ -721,7 +725,6 @@ function renderCharactersTab(container) {
         </div>
     `;
 
-    // Обработчики
     container.querySelectorAll('.nut-btn-activate').forEach(btn => {
         btn.addEventListener('click', () => {
             setActiveCharacter(btn.dataset.id);
@@ -821,7 +824,6 @@ function renderEditCharacter(container, charId) {
             activityLevel: document.getElementById('nut-edit-activity')?.value || 'light',
         });
 
-        // Прямые правки nutrition state
         const c = state.characters[charId];
         if (c) {
             const sat = parseInt(document.getElementById('nut-edit-satiety')?.value);
@@ -840,7 +842,7 @@ function renderEditCharacter(container, charId) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ВКЛАДКА: ЕДА (ручной ввод + справочник)
+// ВКЛАДКА: ЕДА
 // ═══════════════════════════════════════════════════════════════
 
 function renderFoodTab(container) {
@@ -900,7 +902,6 @@ function renderFoodTab(container) {
         </div>
     `;
 
-    // Поиск
     const searchInput = document.getElementById('nut-food-search');
     const resultsDiv = document.getElementById('nut-food-results');
     const customDiv = document.getElementById('nut-food-custom');
@@ -965,7 +966,6 @@ function renderFoodTab(container) {
         }, 300);
     });
 
-    // Ручной ввод
     document.getElementById('nut-custom-add')?.addEventListener('click', () => {
         const name = document.getElementById('nut-custom-name')?.value.trim() || 'Еда';
         window.NutritionFramework.manualAddFood({
@@ -988,7 +988,6 @@ function renderFoodTab(container) {
         searchInput.value = '';
     });
 
-    // Каталог по категориям
     container.querySelectorAll('.nut-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const cat = btn.dataset.cat;
@@ -1032,6 +1031,10 @@ function renderFoodTab(container) {
         });
     });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ВКЛАДКА: НАСТРОЙКИ
+// ═══════════════════════════════════════════════════════════════
 
 function renderSettingsTab(container) {
     const settings = getSettings();
@@ -1091,12 +1094,11 @@ function renderSettingsTab(container) {
         </div>
     `;
 
-    // Обработчики
-    const bind = (id, key, transform = v => v) => {
+    const bind = (id, key) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('change', () => {
-            const val = el.type === 'checkbox' ? el.checked : transform(el.value);
+            const val = el.type === 'checkbox' ? el.checked : el.value;
             updateSettings({ [key]: val });
             showNotify('Настройки сохранены', 'info', 2000);
         });
@@ -1110,22 +1112,18 @@ function renderSettingsTab(container) {
     bind('nut-set-critical', 'criticalOverride');
     bind('nut-set-notif', 'showNotifications');
 
-    // Плавающая кнопка
     document.getElementById('nut-set-float')?.addEventListener('change', (e) => {
         setFloatBtnVisible(e.target.checked);
         showNotify(e.target.checked ? 'Кнопка показана' : 'Кнопка скрыта', 'info', 2000);
     });
 
-    // Тема (дублирует хедер)
     document.getElementById('nut-set-theme')?.addEventListener('change', (e) => {
         setTheme(e.target.value);
-        // Синхронизируем селект в хедере
         const headerSelect = document.getElementById('nut-theme-select');
         if (headerSelect) headerSelect.value = e.target.value;
         showNotify('Тема изменена', 'info', 2000);
     });
 
-    // Опасная зона (без изменений)
     document.getElementById('nut-set-reset')?.addEventListener('click', () => {
         if (!confirm('Сбросить ВСЕ данные о питании в этом чате? Действие необратимо.')) return;
         resetState();
@@ -1165,7 +1163,6 @@ function renderSettingsTab(container) {
         input.click();
     });
 }
-
 
 // ═══════════════════════════════════════════════════════════════
 // ВКЛАДКА: DEBUG
